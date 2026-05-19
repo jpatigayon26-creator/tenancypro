@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TenancyPro — Dubai RERA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { min-height: 100vh; }
+    body { background: #08182e; font-family: 'Plus Jakarta Sans', sans-serif; color: #e8edf5; }
+    input, select, textarea { font-family: 'Plus Jakarta Sans', sans-serif; color: #e8edf5; outline: none; transition: border-color .2s; }
+    input:focus, select:focus, textarea:focus { border-color: rgba(201,168,76,.5) !important; }
+    select option { background: #0e2240; color: #e8edf5; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #08182e; }
+    ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+    @keyframes fadeSlide { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+    @keyframes slideIn   { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:translateX(0)} }
+    .row-hover:hover { background: rgba(255,255,255,.034) !important; cursor: pointer; }
+    .btn-ghost { background:none;border:1px solid rgba(255,255,255,.12);color:#7a90a8;cursor:pointer;padding:.45rem 1.1rem;border-radius:8px;font-size:.82rem;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s; }
+    .btn-ghost:hover { border-color:rgba(255,255,255,.25);color:#e8edf5; }
+    .btn-gold  { background:linear-gradient(135deg,#C9A84C,#a8843d);color:#08182e;border:none;cursor:pointer;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;transition:opacity .2s; }
+    .btn-gold:hover { opacity:.9; }
+    .btn-green { background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#22c55e;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;transition:all .2s; }
+    .btn-green:hover { background:rgba(34,197,94,.25); }
+    .btn-blue  { background:rgba(96,165,250,.13);border:1px solid rgba(96,165,250,.3);color:#60a5fa;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;transition:all .2s;font-size:.8rem; }
+    .btn-blue:hover { background:rgba(96,165,250,.22); }
+    .chip { padding:.3rem .9rem;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7a90a8;cursor:pointer;font-size:.76rem;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s; }
+    .chip.on { background:rgba(201,168,76,.12);border-color:rgba(201,168,76,.35);color:#C9A84C; }
+    .usage-btn { padding:.45rem 1rem;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7a90a8;cursor:pointer;font-size:.8rem;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;transition:all .2s;flex:1;text-align:center; }
+    .usage-btn.on { background:rgba(201,168,76,.13);border-color:rgba(201,168,76,.4);color:#C9A84C;font-weight:600; }
+    .chk-btn { display:inline-flex;align-items:center;gap:.5rem;padding:.35rem .8rem;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#7a90a8;cursor:pointer;font-size:.74rem;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;transition:all .2s; }
+    .chk-btn.on { background:rgba(201,168,76,.1);border-color:rgba(201,168,76,.3);color:#C9A84C; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+// ─────────────────────────────────────────────────────────────
+// ⚙️  YOUR SUPABASE CREDENTIALS — only change these two lines
+// ─────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://fiwuarewfnazbslssove.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpd3VhcmV3Zm5hemJzbHNzb3ZlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMjA3OTEsImV4cCI6MjA5NDY5Njc5MX0.KVFlcsOUVcsieRxYa-kb8ZnIw2neGo7daYXdwu5DsWI'
+// ─────────────────────────────────────────────────────────────
+
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+const { useState, useEffect, useCallback } = React
+
+// ── Constants ─────────────────────────────────────────────────
+const DUBAI_AREAS = ["Business Bay","Bur Dubai","DIFC","Discovery Gardens","Downtown Dubai","Dubai Hills","Dubai Marina","Dubai Silicon Oasis","Deira","Emirates Hills","International City","JBR","JLT","JVC","Jumeirah","Jumeirah Village Circle","Mirdif","Motor City","Al Barsha","Al Furjan","Al Qusais","Arabian Ranches","Palm Jumeirah","Sports City","The Meadows","The Springs","Other"]
+const PROPERTY_TYPES = ["Apartment","Studio","Villa","Townhouse","Penthouse","Office","Retail","Warehouse","Labour Accommodation"]
+const PAYMENT_MODES = ["Bank Transfer","Manager's Cheque","Personal Cheque","Cash","2 Cheques","3 Cheques","4 Cheques","6 Cheques","12 Cheques"]
+const LICENSING_AUTHORITIES = ["DED – Dubai","DIFC","DMCC","DIC","DAFZA","JAFZA","Trakhees","Other"]
+
+// ── Helpers ───────────────────────────────────────────────────
+const daysUntil = s => { const e=new Date(s); e.setHours(0,0,0,0); const t=new Date(); t.setHours(0,0,0,0); return Math.ceil((e-t)/86400000) }
+const statusOf  = e => { const d=daysUntil(e); if(d<0)return'expired'; if(d<=30)return'critical'; if(d<=90)return'expiring'; return'active' }
+const fmtDate   = s => s ? new Date(s).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—'
+const fmtAED    = n => n ? `AED ${Number(n).toLocaleString()}` : '—'
+const dayAfter  = s => { const d=new Date(s); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0] }
+const plusYear  = s => { const d=new Date(s); d.setFullYear(d.getFullYear()+1); d.setDate(d.getDate()-1); return d.toISOString().split('T')[0] }
+
+const exportJSON = contract => {
+  const blob = new Blob([JSON.stringify(contract,null,2)],{type:'application/json'})
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = `${(contract.tenantName||'contract').replace(/\s+/g,'_')}_unit${contract.propertyNo||''}.json`
+  a.click(); URL.revokeObjectURL(a.href)
+}
+
+// ── Styles ────────────────────────────────────────────────────
+const G = { navy:'#08182e', navyLight:'#0e2240', gold:'#C9A84C', goldDark:'#a8843d', text:'#e8edf5', textMuted:'#7a90a8', textDim:'#2d4460', border:'rgba(255,255,255,0.07)', borderGold:'rgba(201,168,76,0.25)', green:'#22c55e', red:'#ef4444' }
+const inp = { width:'100%', padding:'.55rem .875rem', background:'rgba(255,255,255,.045)', border:`1px solid ${G.border}`, borderRadius:'8px', color:G.text, fontSize:'.855rem' }
+const lbl = { display:'block', color:G.textMuted, fontSize:'.68rem', fontWeight:'600', letterSpacing:'.09em', textTransform:'uppercase', marginBottom:'.32rem' }
+const g2  = { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'.8rem' }
+const g3  = { display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'.8rem' }
+const DIV = { marginBottom:'1.5rem', paddingBottom:'1.5rem', borderBottom:`1px solid ${G.border}` }
+const SHD = (n,label) => (
+  <div style={{display:'flex',alignItems:'center',gap:'.65rem',marginBottom:'1rem'}}>
+    <span style={{width:'22px',height:'22px',borderRadius:'50%',background:'rgba(201,168,76,.15)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:'.65rem',fontWeight:'700',color:G.gold,flexShrink:0}}>{n}</span>
+    <span style={{color:G.gold,fontSize:'.7rem',fontWeight:'700',letterSpacing:'.12em',textTransform:'uppercase'}}>{label}</span>
+  </div>
+)
+
+// ── Badge ─────────────────────────────────────────────────────
+function Badge({endDate}) {
+  const s=statusOf(endDate), d=daysUntil(endDate)
+  const cfg = {
+    active:   {l:'Active',       bg:'rgba(34,197,94,.13)',   cl:G.green,   br:'rgba(34,197,94,.28)'},
+    expiring: {l:`${d}d left`,   bg:'rgba(201,168,76,.13)',  cl:G.gold,    br:'rgba(201,168,76,.28)'},
+    critical: {l:`${d}d urgent`, bg:'rgba(239,68,68,.13)',   cl:G.red,     br:'rgba(239,68,68,.28)'},
+    expired:  {l:'Expired',      bg:'rgba(100,116,139,.13)', cl:'#64748b', br:'rgba(100,116,139,.25)'},
+  }[s]
+  return <span style={{display:'inline-flex',alignItems:'center',padding:'.22rem .72rem',borderRadius:'20px',fontSize:'.71rem',fontWeight:'600',background:cfg.bg,color:cfg.cl,border:`1px solid ${cfg.br}`,whiteSpace:'nowrap'}}>{cfg.l}</span>
+}
+
+// ── Auth Screen ───────────────────────────────────────────────
+function Auth() {
+  const [mode,setMode]       = useState('login')
+  const [email,setEmail]     = useState('')
+  const [password,setPassword] = useState('')
+  const [loading,setLoading] = useState(false)
+  const [msg,setMsg]         = useState(null)
+
+  const handle = async e => {
+    e.preventDefault(); setLoading(true); setMsg(null)
+    try {
+      if (mode==='login') {
+        const {error} = await db.auth.signInWithPassword({email,password})
+        if (error) throw error
+      } else if (mode==='signup') {
+        const {error} = await db.auth.signUp({email,password})
+        if (error) throw error
+        setMsg({type:'ok',text:'Account created! Check your email to confirm, then log in.'})
+        setMode('login')
+      } else {
+        const {error} = await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin})
+        if (error) throw error
+        setMsg({type:'ok',text:'Reset link sent — check your email.'})
+        setMode('login')
+      }
+    } catch(err) { setMsg({type:'error',text:err.message}) }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div style={{minHeight:'100vh',background:G.navy,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem'}}>
+      <div style={{width:'100%',maxWidth:'400px'}}>
+        <div style={{textAlign:'center',marginBottom:'2rem'}}>
+          <div style={{width:'52px',height:'52px',borderRadius:'12px',background:`linear-gradient(135deg,${G.gold},${G.goldDark})`,display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:'1.6rem',marginBottom:'.875rem'}}>🏢</div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'1.6rem',fontWeight:'700',color:G.text}}>TenancyPro</div>
+          <div style={{fontSize:'.65rem',color:G.gold,letterSpacing:'.12em',textTransform:'uppercase',marginTop:'.25rem'}}>Dubai Land Department · RERA</div>
+        </div>
+        <div style={{background:G.navyLight,borderRadius:'16px',border:`1px solid ${G.borderGold}`,padding:'2rem',boxShadow:'0 24px 60px rgba(0,0,0,.4)'}}>
+          <h2 style={{color:G.text,fontSize:'1.1rem',fontWeight:'600',marginBottom:'1.5rem'}}>{mode==='login'?'Sign in':mode==='signup'?'Create account':'Reset password'}</h2>
+          {msg && <div style={{padding:'.75rem 1rem',borderRadius:'8px',marginBottom:'1.25rem',fontSize:'.82rem',background:msg.type==='ok'?'rgba(34,197,94,.1)':'rgba(239,68,68,.1)',border:`1px solid ${msg.type==='ok'?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)'}`,color:msg.type==='ok'?G.green:G.red}}>{msg.text}</div>}
+          <form onSubmit={handle}>
+            <div style={{marginBottom:'1rem'}}>
+              <label style={lbl}>Email</label>
+              <input style={inp} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@email.com" required />
+            </div>
+            {mode!=='reset' && <div style={{marginBottom:'1.5rem'}}>
+              <label style={lbl}>Password</label>
+              <input style={inp} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
+            </div>}
+            <button type="submit" disabled={loading} className="btn-gold" style={{width:'100%',padding:'.7rem',borderRadius:'8px',fontSize:'.9rem',opacity:loading?.7:1}}>
+              {loading?'Please wait…':mode==='login'?'Sign in':mode==='signup'?'Create account':'Send reset link'}
+            </button>
+          </form>
+          <div style={{marginTop:'1.25rem',display:'flex',flexDirection:'column',gap:'.5rem',alignItems:'center'}}>
+            {mode==='login' && <>
+              <button onClick={()=>{setMode('signup');setMsg(null)}} style={{background:'none',border:'none',color:G.textMuted,cursor:'pointer',fontSize:'.82rem'}}>No account? <span style={{color:G.gold}}>Sign up</span></button>
+              <button onClick={()=>{setMode('reset');setMsg(null)}} style={{background:'none',border:'none',color:G.textMuted,cursor:'pointer',fontSize:'.78rem'}}>Forgot password?</button>
+            </>}
+            {mode!=='login' && <button onClick={()=>{setMode('login');setMsg(null)}} style={{background:'none',border:'none',color:G.textMuted,cursor:'pointer',fontSize:'.82rem'}}>← Back to sign in</button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Alert Banners ─────────────────────────────────────────────
+function Alerts({contracts}) {
+  const [gone,setGone] = useState([])
+  const list = contracts.filter(c=>{const d=daysUntil(c.contractTo);return d>=0&&d<=90&&!gone.includes(c.id)}).sort((a,b)=>daysUntil(a.contractTo)-daysUntil(b.contractTo)).slice(0,5)
+  if (!list.length) return null
+  return (
+    <div style={{marginBottom:'1.75rem'}}>
+      {list.map(c=>{
+        const d=daysUntil(c.contractTo),crit=d<=30
+        return <div key={c.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.78rem 1.1rem',borderRadius:'10px',marginBottom:'.45rem',background:crit?'rgba(239,68,68,.09)':'rgba(201,168,76,.08)',border:`1px solid ${crit?'rgba(239,68,68,.25)':'rgba(201,168,76,.22)'}`,animation:'fadeSlide .3s ease'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'.65rem'}}>
+            <div style={{width:'7px',height:'7px',borderRadius:'50%',background:crit?G.red:G.gold,flexShrink:0}}/>
+            <span style={{fontSize:'.82rem',color:G.text}}>
+              <strong style={{color:crit?G.red:G.gold}}>{crit?'URGENT — ':'NOTICE — '}</strong>
+              <strong>{c.tenantName}</strong> · Unit {c.propertyNo}, {c.buildingName} · expires in <strong>{d} day{d!==1?'s':''}</strong> ({fmtDate(c.contractTo)})
+            </span>
+          </div>
+          <button onClick={()=>setGone(g=>[...g,c.id])} style={{background:'none',border:'none',color:G.textMuted,cursor:'pointer',fontSize:'1.1rem',lineHeight:1,padding:'.15rem .4rem',flexShrink:0}}>×</button>
+        </div>
+      })}
+    </div>
+  )
+}
+
+// ── Contract Form ─────────────────────────────────────────────
+const BLANK = {contractDate:new Date().toISOString().split('T')[0],ownerName:'',lessorName:'',lessorEmiratesId:'',lessorEmail:'',lessorPhone:'',annualRent:'',lessorIsCompany:false,lessorLicenseNo:'',lessorLicensingAuthority:'',tenantName:'',tenantEmiratesId:'',tenantEmail:'',tenantPhone:'',tenantIsCompany:false,tenantLicenseNo:'',tenantLicensingAuthority:'',makaniNo:'',plotNo:'',location:'',buildingName:'',propertyType:'Apartment',propertyNo:'',propertyAreaSqm:'',dewaNo:'',propertyUsage:'Residential',contractFrom:'',contractTo:'',contractValue:'',securityDeposit:'',paymentMode:"Manager's Cheque",additionalTerms:['','','','',''],ejariNo:'',notes:''}
+
+function ContractForm({contract,onSave,onClose,saving}) {
+  const [f,setF] = useState(contract?{...BLANK,...contract}:BLANK)
+  const set  = k => e => setF(p=>({...p,[k]:e.target.value}))
+  const setV = (k,v) => setF(p=>({...p,[k]:v}))
+  const setT = (i,v) => setF(p=>{const t=[...p.additionalTerms];t[i]=v;return{...p,additionalTerms:t}})
+  const submit = () => {
+    if (!f.tenantName||!f.propertyNo||!f.contractFrom||!f.contractTo){alert('Required: Tenant Name, Property No., Contract Period');return}
+    onSave({...f,id:f.id||Date.now().toString(),createdAt:f.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()})
+  }
+  const Chk = ({field,label}) => (
+    <button className={`chk-btn ${f[field]?'on':''}`} onClick={()=>setV(field,!f[field])}>
+      <span style={{width:'14px',height:'14px',borderRadius:'3px',border:`1.5px solid ${f[field]?G.gold:G.textMuted}`,background:f[field]?'rgba(201,168,76,.2)':'transparent',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:'.6rem',color:G.gold}}>{f[field]?'✓':''}</span>
+      {label}
+    </button>
+  )
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',backdropFilter:'blur(5px)',animation:'fadeIn .2s'}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:G.navyLight,borderRadius:'16px',border:`1px solid ${G.borderGold}`,width:'100%',maxWidth:'760px',maxHeight:'94vh',overflow:'hidden',display:'flex',flexDirection:'column',boxShadow:'0 32px 72px rgba(0,0,0,.6)'}}>
+        <div style={{padding:'1.3rem 1.875rem',borderBottom:`1px solid ${G.border}`,display:'flex',alignItems:'center',justifyContent:'space-between',background:'rgba(201,168,76,.04)'}}>
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:'.875rem'}}>
+              <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'1.3rem',fontWeight:'700',color:G.text}}>{contract?'Edit Contract':'New Tenancy Contract'}</h2>
+              <span style={{fontSize:'.65rem',color:G.gold,border:`1px solid ${G.borderGold}`,padding:'.18rem .65rem',borderRadius:'20px',letterSpacing:'.08em',whiteSpace:'nowrap'}}>DLD UNIFIED FORM</span>
+            </div>
+            <p style={{color:G.textMuted,fontSize:'.73rem',marginTop:'.2rem'}}>Dubai Land Department · Law No. 26 of 2007</p>
+          </div>
+          <button onClick={onClose} style={{background:'rgba(255,255,255,.08)',border:'none',color:G.textMuted,cursor:'pointer',width:'34px',height:'34px',borderRadius:'8px',fontSize:'1.2rem',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>×</button>
+        </div>
+        <div style={{padding:'1.75rem 1.875rem',overflowY:'auto',flex:1}}>
+          <div style={DIV}><div style={{maxWidth:'200px'}}><label style={lbl}>Contract Date</label><input style={inp} type="date" value={f.contractDate} onChange={set('contractDate')}/></div></div>
+          <div style={DIV}>
+            {SHD('1','Owner / Lessor Information')}
+            <div style={{...g2,marginBottom:'.8rem'}}>
+              <div><label style={lbl}>Owner's Name (المالك)</label><input style={inp} value={f.ownerName} onChange={set('ownerName')} placeholder="Legal owner"/></div>
+              <div><label style={lbl}>Lessor's Name (المؤجر)</label><input style={inp} value={f.lessorName} onChange={set('lessorName')} placeholder="If different from owner"/></div>
+              <div><label style={lbl}>Lessor's Emirates ID</label><input style={inp} value={f.lessorEmiratesId} onChange={set('lessorEmiratesId')} placeholder="784-XXXX-XXXXXXX-X"/></div>
+              <div><label style={lbl}>Annual Rent (AED)</label><input style={inp} type="number" value={f.annualRent} onChange={set('annualRent')} placeholder="e.g. 120000"/></div>
+              <div><label style={lbl}>Lessor Email</label><input style={inp} type="email" value={f.lessorEmail} onChange={set('lessorEmail')} placeholder="lessor@email.com"/></div>
+              <div><label style={lbl}>Lessor Phone</label><input style={inp} value={f.lessorPhone} onChange={set('lessorPhone')} placeholder="+971 XX XXX XXXX"/></div>
+            </div>
+            <div style={{marginBottom:'.75rem'}}><Chk field="lessorIsCompany" label="Lessor is a Company"/></div>
+            {f.lessorIsCompany && <div style={g2}><div><label style={lbl}>License No.</label><input style={inp} value={f.lessorLicenseNo} onChange={set('lessorLicenseNo')}/></div><div><label style={lbl}>Licensing Authority</label><select style={inp} value={f.lessorLicensingAuthority} onChange={set('lessorLicensingAuthority')}><option value="">Select…</option>{LICENSING_AUTHORITIES.map(a=><option key={a}>{a}</option>)}</select></div></div>}
+          </div>
+          <div style={DIV}>
+            {SHD('2','Tenant Information')}
+            <div style={{...g2,marginBottom:'.8rem'}}>
+              <div><label style={lbl}>Tenant's Name *</label><input style={inp} value={f.tenantName} onChange={set('tenantName')} placeholder="As per Emirates ID"/></div>
+              <div><label style={lbl}>Tenant's Emirates ID</label><input style={inp} value={f.tenantEmiratesId} onChange={set('tenantEmiratesId')} placeholder="784-XXXX-XXXXXXX-X"/></div>
+              <div><label style={lbl}>Tenant Email</label><input style={inp} type="email" value={f.tenantEmail} onChange={set('tenantEmail')} placeholder="tenant@email.com"/></div>
+              <div><label style={lbl}>Tenant Phone</label><input style={inp} value={f.tenantPhone} onChange={set('tenantPhone')} placeholder="+971 XX XXX XXXX"/></div>
+            </div>
+            <div style={{marginBottom:'.75rem'}}><Chk field="tenantIsCompany" label="Tenant is a Company"/></div>
+            {f.tenantIsCompany && <div style={g2}><div><label style={lbl}>License No.</label><input style={inp} value={f.tenantLicenseNo} onChange={set('tenantLicenseNo')}/></div><div><label style={lbl}>Licensing Authority</label><select style={inp} value={f.tenantLicensingAuthority} onChange={set('tenantLicensingAuthority')}><option value="">Select…</option>{LICENSING_AUTHORITIES.map(a=><option key={a}>{a}</option>)}</select></div></div>}
+          </div>
+          <div style={DIV}>
+            {SHD('3','Property Information')}
+            <div style={{...g3,marginBottom:'.8rem'}}>
+              <div><label style={lbl}>Makani No.</label><input style={inp} value={f.makaniNo} onChange={set('makaniNo')} placeholder="8-digit"/></div>
+              <div><label style={lbl}>Plot No.</label><input style={inp} value={f.plotNo} onChange={set('plotNo')} placeholder="e.g. 412-823"/></div>
+              <div><label style={lbl}>Property No. *</label><input style={inp} value={f.propertyNo} onChange={set('propertyNo')} placeholder="Unit / villa no."/></div>
+            </div>
+            <div style={{...g2,marginBottom:'.8rem'}}>
+              <div><label style={lbl}>Location</label><select style={inp} value={f.location} onChange={set('location')}><option value="">Select area…</option>{DUBAI_AREAS.map(a=><option key={a}>{a}</option>)}</select></div>
+              <div><label style={lbl}>Building Name</label><input style={inp} value={f.buildingName} onChange={set('buildingName')} placeholder="Building / compound"/></div>
+              <div><label style={lbl}>Property Type</label><select style={inp} value={f.propertyType} onChange={set('propertyType')}>{PROPERTY_TYPES.map(t=><option key={t}>{t}</option>)}</select></div>
+              <div><label style={lbl}>Area (m²)</label><input style={inp} type="number" value={f.propertyAreaSqm} onChange={set('propertyAreaSqm')} placeholder="e.g. 116"/></div>
+            </div>
+            <div style={{marginBottom:'.8rem',maxWidth:'55%'}}><label style={lbl}>DEWA Premises No.</label><input style={inp} value={f.dewaNo} onChange={set('dewaNo')} placeholder="DEWA number"/></div>
+            <div>
+              <label style={{...lbl,marginBottom:'.55rem'}}>Property Usage</label>
+              <div style={{display:'flex',gap:'.5rem'}}>
+                {['Residential','Commercial','Industrial'].map(u=><button key={u} className={`usage-btn ${f.propertyUsage===u?'on':''}`} onClick={()=>setV('propertyUsage',u)}>{u}</button>)}
+              </div>
+            </div>
+          </div>
+          <div style={DIV}>
+            {SHD('4','Contract Information')}
+            <div style={{marginBottom:'.8rem'}}>
+              <label style={{...lbl,marginBottom:'.55rem'}}>Contract Period *</label>
+              <div style={{display:'flex',alignItems:'center',gap:'.875rem'}}>
+                <div style={{flex:1}}><label style={{...lbl,fontSize:'.61rem'}}>From</label><input style={inp} type="date" value={f.contractFrom} onChange={set('contractFrom')}/></div>
+                <div style={{color:G.textMuted,paddingTop:'1.2rem'}}>→</div>
+                <div style={{flex:1}}><label style={{...lbl,fontSize:'.61rem'}}>To</label><input style={inp} type="date" value={f.contractTo} onChange={set('contractTo')}/></div>
+              </div>
+            </div>
+            <div style={g3}>
+              <div><label style={lbl}>Contract Value (AED)</label><input style={inp} type="number" value={f.contractValue} onChange={set('contractValue')} placeholder="Total value"/></div>
+              <div><label style={lbl}>Security Deposit (AED)</label><input style={inp} type="number" value={f.securityDeposit} onChange={set('securityDeposit')} placeholder="e.g. 10000"/></div>
+              <div><label style={lbl}>Mode of Payment</label><select style={inp} value={f.paymentMode} onChange={set('paymentMode')}>{PAYMENT_MODES.map(m=><option key={m}>{m}</option>)}</select></div>
+            </div>
+          </div>
+          <div style={DIV}>
+            {SHD('5','Additional Terms')}
+            {f.additionalTerms.map((t,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:'.75rem',marginBottom:'.6rem'}}>
+                <span style={{color:G.textMuted,fontSize:'.8rem',fontWeight:'600',minWidth:'20px'}}>{i+1}.</span>
+                <input style={inp} value={t} onChange={e=>setT(i,e.target.value)} placeholder={`Additional term ${i+1}`}/>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:'.65rem',marginBottom:'1rem'}}>
+              <span style={{width:'22px',height:'22px',borderRadius:'50%',background:'rgba(96,165,250,.15)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:'.7rem',color:'#60a5fa'}}>✦</span>
+              <span style={{color:'#60a5fa',fontSize:'.7rem',fontWeight:'700',letterSpacing:'.12em',textTransform:'uppercase'}}>Internal</span>
+            </div>
+            <div style={g2}>
+              <div><label style={lbl}>Ejari No.</label><input style={inp} value={f.ejariNo} onChange={set('ejariNo')} placeholder="After Ejari registration"/></div>
+              <div><label style={lbl}>Notes</label><input style={inp} value={f.notes} onChange={set('notes')} placeholder="Parking, inclusions…"/></div>
+            </div>
+          </div>
+        </div>
+        <div style={{padding:'1.1rem 1.875rem',borderTop:`1px solid ${G.border}`,display:'flex',justifyContent:'flex-end',gap:'.65rem',background:'rgba(0,0,0,.2)'}}>
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-gold" onClick={submit} disabled={saving} style={{padding:'.55rem 1.75rem',borderRadius:'8px',fontSize:'.875rem',opacity:saving?.7:1}}>{saving?'Saving…':contract?'Save Changes':'Add Contract'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Renewal Modal ─────────────────────────────────────────────
+function RenewalModal({contract,onRenew,onClose,saving}) {
+  const ns = dayAfter(contract.contractTo)
+  const [f,setF] = useState({contractFrom:ns,contractTo:plusYear(ns),annualRent:contract.annualRent,contractValue:contract.contractValue||contract.annualRent,paymentMode:contract.paymentMode,securityDeposit:contract.securityDeposit,ejariNo:''})
+  const set = k => e => setF(p=>({...p,[k]:e.target.value}))
+  const maxRent=Math.round(Number(contract.annualRent)*1.20), over=Number(f.annualRent)>maxRent
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.75)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:'1rem',backdropFilter:'blur(5px)'}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:G.navyLight,borderRadius:'16px',border:'1px solid rgba(34,197,94,.3)',width:'100%',maxWidth:'510px',boxShadow:'0 30px 70px rgba(0,0,0,.55)'}}>
+        <div style={{padding:'1.3rem 1.875rem',borderBottom:`1px solid ${G.border}`}}>
+          <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'1.25rem',fontWeight:'700',color:G.green}}>Renew Contract</h2>
+          <p style={{color:G.textMuted,fontSize:'.78rem',marginTop:'.2rem'}}>{contract.tenantName} · Unit {contract.propertyNo}, {contract.buildingName}</p>
+        </div>
+        <div style={{padding:'1.75rem 1.875rem'}}>
+          <div style={{background:'rgba(201,168,76,.07)',border:`1px solid rgba(201,168,76,.2)`,borderRadius:'10px',padding:'.85rem 1rem',marginBottom:'1.4rem',fontSize:'.77rem',color:G.textMuted,lineHeight:1.7}}>
+            <strong style={{color:G.gold}}>RERA Rent Rules — Law No. 43 of 2013</strong><br/>
+            Current rent: <strong style={{color:G.text}}>{fmtAED(contract.annualRent)}</strong> · Max (+20%): <strong style={{color:G.text}}>{fmtAED(maxRent)}</strong>
+          </div>
+          <div style={{marginBottom:'.8rem'}}>
+            <label style={{...lbl,marginBottom:'.55rem'}}>New Period</label>
+            <div style={{display:'flex',gap:'.75rem'}}>
+              <div style={{flex:1}}><label style={{...lbl,fontSize:'.61rem'}}>From</label><input style={inp} type="date" value={f.contractFrom} onChange={set('contractFrom')}/></div>
+              <div style={{flex:1}}><label style={{...lbl,fontSize:'.61rem'}}>To</label><input style={inp} type="date" value={f.contractTo} onChange={set('contractTo')}/></div>
+            </div>
+          </div>
+          <div style={{...g2,marginBottom:'.8rem'}}>
+            <div>
+              <label style={lbl}>New Annual Rent (AED)</label>
+              <input style={{...inp,borderColor:over?'rgba(239,68,68,.5)':undefined}} type="number" value={f.annualRent} onChange={set('annualRent')}/>
+              {over&&<p style={{color:G.red,fontSize:'.7rem',marginTop:'.3rem'}}>⚠ Exceeds RERA max ({fmtAED(maxRent)})</p>}
+            </div>
+            <div><label style={lbl}>Contract Value (AED)</label><input style={inp} type="number" value={f.contractValue} onChange={set('contractValue')}/></div>
+            <div><label style={lbl}>Security Deposit (AED)</label><input style={inp} type="number" value={f.securityDeposit} onChange={set('securityDeposit')}/></div>
+            <div><label style={lbl}>Payment Mode</label><select style={inp} value={f.paymentMode} onChange={set('paymentMode')}>{PAYMENT_MODES.map(m=><option key={m}>{m}</option>)}</select></div>
+          </div>
+          <div><label style={lbl}>New Ejari No.</label><input style={inp} value={f.ejariNo} onChange={set('ejariNo')} placeholder="After Ejari registration"/></div>
+        </div>
+        <div style={{padding:'1.1rem 1.875rem',borderTop:`1px solid ${G.border}`,display:'flex',justifyContent:'flex-end',gap:'.65rem'}}>
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-green" onClick={()=>onRenew(f)} disabled={saving} style={{padding:'.55rem 1.75rem',borderRadius:'8px',fontSize:'.875rem',opacity:saving?.7:1}}>{saving?'Saving…':'Confirm Renewal'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Detail Panel ──────────────────────────────────────────────
+function DetailPanel({c,onEdit,onRenew,onDelete,onClose}) {
+  const [showPdf,setShowPdf] = useState(false)
+  const d=daysUntil(c.contractTo), s=statusOf(c.contractTo)
+  const Row = ({label,value}) => value ? (
+    <div style={{display:'flex',justifyContent:'space-between',padding:'.44rem 0',borderBottom:`1px solid ${G.border}`}}>
+      <span style={{color:G.textMuted,fontSize:'.76rem',flexShrink:0,paddingRight:'.5rem'}}>{label}</span>
+      <span style={{color:G.text,fontSize:'.76rem',textAlign:'right'}}>{value}</span>
+    </div>
+  ) : null
+  const SH = ({ch}) => <div style={{margin:'1rem 0 .55rem',color:G.gold,fontSize:'.67rem',fontWeight:'700',letterSpacing:'.12em',textTransform:'uppercase'}}>{ch}</div>
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:1000,display:'flex',alignItems:'stretch',justifyContent:'flex-end',backdropFilter:'blur(4px)',animation:'fadeIn .2s'}} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{background:G.navyLight,width:'415px',maxHeight:'100vh',overflowY:'auto',borderLeft:`1px solid ${G.border}`,boxShadow:'-20px 0 60px rgba(0,0,0,.45)',animation:'slideIn .25s ease'}}>
+        <div style={{padding:'1.3rem 1.5rem',borderBottom:`1px solid ${G.border}`,display:'flex',justifyContent:'space-between',alignItems:'flex-start',position:'sticky',top:0,background:G.navyLight,zIndex:1}}>
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:'.6rem',marginBottom:'.25rem'}}>
+              <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'1.1rem',fontWeight:'700',color:G.text}}>{c.tenantName}</h2>
+              <Badge endDate={c.contractTo}/>
+            </div>
+            <p style={{color:G.textMuted,fontSize:'.73rem'}}>Unit {c.propertyNo} · {c.buildingName}{c.location?` · ${c.location}`:''}</p>
+          </div>
+          <button onClick={onClose} style={{background:'rgba(255,255,255,.08)',border:'none',color:G.textMuted,cursor:'pointer',width:'32px',height:'32px',borderRadius:'8px',fontSize:'1.1rem',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>×</button>
+        </div>
+        <div style={{padding:'1.5rem'}}>
+          {(s==='expiring'||s==='critical')&&<div style={{background:s==='critical'?'rgba(239,68,68,.1)':'rgba(201,168,76,.1)',border:`1px solid ${s==='critical'?'rgba(239,68,68,.28)':'rgba(201,168,76,.28)'}`,borderRadius:'12px',padding:'1rem',marginBottom:'1.25rem',textAlign:'center'}}>
+            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'2.4rem',fontWeight:'700',color:s==='critical'?G.red:G.gold,lineHeight:1}}>{d}</div>
+            <div style={{color:G.textMuted,fontSize:'.77rem',marginBottom:'.875rem'}}>days until expiry</div>
+            <button className="btn-green" onClick={onRenew} style={{padding:'.55rem 1.5rem',borderRadius:'8px',fontSize:'.83rem',width:'100%'}}>Renew Contract</button>
+          </div>}
+          {s==='expired'&&<div style={{background:'rgba(100,116,139,.1)',border:'1px solid rgba(100,116,139,.25)',borderRadius:'12px',padding:'1rem',marginBottom:'1.25rem',textAlign:'center'}}>
+            <div style={{color:'#64748b',fontSize:'.85rem',fontWeight:'600',marginBottom:'.875rem'}}>Expired {Math.abs(d)} days ago</div>
+            <button className="btn-gold" onClick={onRenew} style={{padding:'.55rem 1.5rem',borderRadius:'8px',fontSize:'.83rem',width:'100%'}}>Renew Now</button>
+          </div>}
+
+          <div style={{background:'rgba(96,165,250,.07)',border:'1px solid rgba(96,165,250,.2)',borderRadius:'10px',padding:'.875rem 1rem',marginBottom:'1.25rem'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'.6rem'}}>
+              <span style={{color:'#60a5fa',fontSize:'.78rem',fontWeight:'600'}}>📄 Export DLD PDF</span>
+              <button className="btn-blue" onClick={()=>exportJSON(c)} style={{padding:'.3rem .875rem',borderRadius:'6px'}}>Download JSON</button>
+            </div>
+            <button onClick={()=>setShowPdf(!showPdf)} style={{background:'none',border:'none',color:G.textMuted,cursor:'pointer',fontSize:'.72rem',padding:0,textDecoration:'underline'}}>{showPdf?'Hide':'How to generate →'}</button>
+            {showPdf&&<div style={{marginTop:'.75rem',fontSize:'.73rem',color:G.textMuted,lineHeight:1.8,background:'rgba(0,0,0,.2)',borderRadius:'8px',padding:'.75rem'}}>
+              1. Click <strong style={{color:'#60a5fa'}}>Download JSON</strong><br/>
+              2. Place generate_pdf.py + DLD template in same folder<br/>
+              3. Run: <code style={{color:G.gold}}>python generate_pdf.py {c.tenantName.replace(/\s/g,'_')}.json</code>
+            </div>}
+          </div>
+
+          <SH ch="Tenant"/><Row label="Emirates ID" value={c.tenantEmiratesId}/><Row label="Phone" value={c.tenantPhone}/><Row label="Email" value={c.tenantEmail}/>
+          {c.tenantIsCompany&&<><Row label="License No." value={c.tenantLicenseNo}/><Row label="Licensing Auth." value={c.tenantLicensingAuthority}/></>}
+          <SH ch="Lessor / Owner"/><Row label="Owner" value={c.ownerName}/><Row label="Lessor" value={c.lessorName}/><Row label="Phone" value={c.lessorPhone}/><Row label="Email" value={c.lessorEmail}/>
+          {c.lessorIsCompany&&<><Row label="License No." value={c.lessorLicenseNo}/><Row label="Licensing Auth." value={c.lessorLicensingAuthority}/></>}
+          <SH ch="Property"/><Row label="Property No." value={c.propertyNo}/><Row label="Building" value={c.buildingName}/><Row label="Location" value={c.location}/><Row label="Type" value={c.propertyType}/><Row label="Usage" value={c.propertyUsage}/><Row label="Area" value={c.propertyAreaSqm?`${c.propertyAreaSqm} m²`:null}/><Row label="Makani No." value={c.makaniNo}/><Row label="Plot No." value={c.plotNo}/><Row label="DEWA No." value={c.dewaNo}/>
+          <SH ch="Contract"/><Row label="Date" value={fmtDate(c.contractDate)}/><Row label="Period" value={`${fmtDate(c.contractFrom)} → ${fmtDate(c.contractTo)}`}/><Row label="Annual Rent" value={fmtAED(c.annualRent)}/><Row label="Contract Value" value={fmtAED(c.contractValue)}/><Row label="Security Deposit" value={fmtAED(c.securityDeposit)}/><Row label="Payment" value={c.paymentMode}/><Row label="Ejari No." value={c.ejariNo}/>
+          {c.additionalTerms?.some(t=>t)&&<><SH ch="Additional Terms"/>{c.additionalTerms.filter(t=>t).map((t,i)=><div key={i} style={{display:'flex',gap:'.6rem',padding:'.44rem 0',borderBottom:`1px solid ${G.border}`}}><span style={{color:G.textMuted,fontSize:'.74rem',fontWeight:'600',minWidth:'18px'}}>{i+1}.</span><span style={{color:G.text,fontSize:'.76rem'}}>{t}</span></div>)}</>}
+          {c.notes&&<><SH ch="Notes"/><p style={{color:G.textMuted,fontSize:'.78rem',lineHeight:1.6}}>{c.notes}</p></>}
+
+          <div style={{display:'flex',gap:'.5rem',marginTop:'1.75rem'}}>
+            <button className="btn-ghost" onClick={onEdit} style={{flex:1}}>Edit</button>
+            <button onClick={onDelete} style={{flex:1,padding:'.45rem 1rem',borderRadius:'8px',border:'1px solid rgba(239,68,68,.3)',background:'rgba(239,68,68,.08)',color:G.red,cursor:'pointer',fontSize:'.82rem',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main App ──────────────────────────────────────────────────
+function App() {
+  const [session,setSession]   = useState(undefined)
+  const [contracts,setContracts] = useState([])
+  const [loading,setLoading]   = useState(true)
+  const [saving,setSaving]     = useState(false)
+  const [modal,setModal]       = useState(null)
+  const [sel,setSel]           = useState(null)
+  const [view,setView]         = useState('dashboard')
+  const [search,setSearch]     = useState('')
+  const [filter,setFilter]     = useState('all')
+  const [sort,setSort]         = useState('expiry')
+
+  useEffect(()=>{
+    db.auth.getSession().then(({data})=>setSession(data.session))
+    const {data:{subscription}} = db.auth.onAuthStateChange((_e,s)=>setSession(s))
+    return ()=>subscription.unsubscribe()
+  },[])
+
+  const loadContracts = useCallback(async()=>{
+    if (!session) return
+    setLoading(true)
+    const {data,error} = await db.from('contracts').select('id,data').order('created_at',{ascending:true})
+    if (!error&&data) setContracts(data.map(r=>({...r.data,id:r.id})))
+    setLoading(false)
+  },[session])
+
+  useEffect(()=>{loadContracts()},[loadContracts])
+
+  const saveC = async contract => {
+    setSaving(true)
+    const {error} = await db.from('contracts').upsert({id:contract.id,user_id:session.user.id,data:contract,updated_at:new Date().toISOString()},{onConflict:'id'})
+    if (error){alert('Save failed: '+error.message);setSaving(false);return}
+    await loadContracts(); setSaving(false); setModal(null)
+  }
+
+  const doRenew = async rd => {
+    const updated={...sel,...rd,ejariNo:rd.ejariNo||sel.ejariNo,renewedAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
+    setSaving(true)
+    const {error} = await db.from('contracts').upsert({id:updated.id,user_id:session.user.id,data:updated,updated_at:new Date().toISOString()},{onConflict:'id'})
+    if (error){alert('Renewal failed: '+error.message);setSaving(false);return}
+    await loadContracts(); setSaving(false); setModal(null); setSel(null)
+  }
+
+  const doDelete = async()=>{
+    if (!confirm('Delete this contract? Cannot be undone.')) return
+    const {error} = await db.from('contracts').delete().eq('id',sel.id)
+    if (error){alert('Delete failed: '+error.message);return}
+    await loadContracts(); setModal(null); setSel(null)
+  }
+
+  const stats = {
+    total:contracts.length,
+    active:contracts.filter(c=>statusOf(c.contractTo)==='active').length,
+    expiring:contracts.filter(c=>['expiring','critical'].includes(statusOf(c.contractTo))).length,
+    expired:contracts.filter(c=>statusOf(c.contractTo)==='expired').length,
+    portfolio:contracts.reduce((s,c)=>s+Number(c.annualRent||0),0),
+  }
+
+  const filtered = contracts
+    .filter(c=>{
+      const q=search.toLowerCase()
+      const hit=!q||[c.tenantName,c.propertyNo,c.buildingName,c.location,c.ejariNo,c.plotNo,c.makaniNo,c.ownerName].some(v=>v?.toLowerCase().includes(q))
+      const st=statusOf(c.contractTo)
+      return hit&&(filter==='all'||st===filter||(filter==='expiring'&&st==='critical'))
+    })
+    .sort((a,b)=>sort==='expiry'?daysUntil(a.contractTo)-daysUntil(b.contractTo):sort==='name'?a.tenantName.localeCompare(b.tenantName):Number(b.annualRent)-Number(a.annualRent))
+
+  const open = c=>{setSel(c);setModal('detail')}
+
+  if (session===undefined) return <div style={{minHeight:'100vh',background:G.navy,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant Garamond',serif",fontSize:'1.4rem',color:G.gold}}>Loading…</div>
+  if (!session) return <Auth/>
+  if (loading) return <div style={{minHeight:'100vh',background:G.navy,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Cormorant Garamond',serif",fontSize:'1.4rem',color:G.gold}}>Loading contracts…</div>
+
+  return (
+    <div style={{minHeight:'100vh',background:G.navy}}>
+      <header style={{borderBottom:`1px solid ${G.border}`,background:'rgba(8,24,46,.97)',position:'sticky',top:0,zIndex:200,backdropFilter:'blur(10px)'}}>
+        <div style={{maxWidth:'1360px',margin:'0 auto',padding:'0 1.75rem',display:'flex',alignItems:'center',justifyContent:'space-between',height:'62px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'.875rem'}}>
+            <div style={{width:'34px',height:'34px',borderRadius:'8px',background:`linear-gradient(135deg,${G.gold},${G.goldDark})`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.1rem'}}>🏢</div>
+            <div>
+              <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'1.15rem',fontWeight:'700',color:G.text,lineHeight:1.1}}>TenancyPro</div>
+              <div style={{fontSize:'.6rem',color:G.gold,letterSpacing:'.12em',textTransform:'uppercase'}}>Dubai Land Department · RERA</div>
+            </div>
+          </div>
+          <nav style={{display:'flex',gap:'.2rem'}}>
+            {[{k:'dashboard',l:'Dashboard'},{k:'contracts',l:'Contracts'}].map(({k,l})=>(
+              <button key={k} onClick={()=>setView(k)} style={{background:view===k?'rgba(201,168,76,.1)':'none',border:'none',color:view===k?G.gold:G.textMuted,cursor:'pointer',padding:'.45rem 1rem',borderRadius:'8px',fontSize:'.85rem',fontWeight:'500',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>{l}</button>
+            ))}
+          </nav>
+          <div style={{display:'flex',gap:'.75rem',alignItems:'center'}}>
+            <button className="btn-gold" onClick={()=>setModal('add')} style={{padding:'.5rem 1.3rem',borderRadius:'8px',fontSize:'.85rem'}}>+ Add Contract</button>
+            <button onClick={()=>db.auth.signOut()} style={{background:'none',border:`1px solid ${G.border}`,color:G.textMuted,cursor:'pointer',padding:'.45rem .875rem',borderRadius:'8px',fontSize:'.8rem',fontFamily:"'Plus Jakarta Sans',sans-serif"}}>Sign out</button>
+          </div>
+        </div>
+      </header>
+
+      <main style={{maxWidth:'1360px',margin:'0 auto',padding:'2rem 1.75rem'}}>
+        <Alerts contracts={contracts}/>
+
+        {view==='dashboard'?(
+          <>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'1rem',marginBottom:'2rem'}}>
+              {[{label:'Total Units',val:stats.total,color:G.textMuted},{label:'Active',val:stats.active,color:G.green},{label:'Expiring Soon',val:stats.expiring,color:G.gold},{label:'Expired',val:stats.expired,color:G.red},{label:'Annual Portfolio',val:`AED ${(stats.portfolio/1000).toFixed(0)}K`,color:G.gold}].map(s=>(
+                <div key={s.label} style={{background:G.navyLight,borderRadius:'12px',padding:'1.25rem 1.4rem',border:`1px solid ${G.border}`}}>
+                  <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:'2rem',fontWeight:'700',color:s.color,lineHeight:1}}>{s.val}</div>
+                  <div style={{color:G.textMuted,fontSize:'.75rem',marginTop:'.35rem'}}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1.5rem'}}>
+              {[
+                {title:'Expiring within 90 days ⏰',list:contracts.filter(c=>{const d=daysUntil(c.contractTo);return d>=0&&d<=90}).sort((a,b)=>daysUntil(a.contractTo)-daysUntil(b.contractTo)).slice(0,7),showRenew:false,empty:'No contracts expiring soon'},
+                {title:'Expired contracts ❌',list:contracts.filter(c=>daysUntil(c.contractTo)<0).sort((a,b)=>daysUntil(b.contractTo)-daysUntil(a.contractTo)).slice(0,7),showRenew:true,empty:'No expired contracts'},
+              ].map(panel=>(
+                <div key={panel.title} style={{background:G.navyLight,borderRadius:'14px',border:`1px solid ${G.border}`,padding:'1.5rem'}}>
+                  <h3 style={{fontSize:'.875rem',fontWeight:'600',color:G.text,marginBottom:'1.1rem'}}>{panel.title}</h3>
+                  {panel.list.length===0?<div style={{color:G.textMuted,fontSize:'.85rem',textAlign:'center',padding:'1.75rem 0'}}>✓ {panel.empty}</div>
+                    :panel.list.map(c=>(
+                      <div key={c.id} onClick={()=>open(c)} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'.65rem 0',borderBottom:`1px solid ${G.border}`,cursor:'pointer'}}>
+                        <div><div style={{fontSize:'.875rem',fontWeight:'500',color:G.text}}>{c.tenantName}</div><div style={{color:G.textMuted,fontSize:'.73rem'}}>Unit {c.propertyNo} · {c.buildingName}</div></div>
+                        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:'.3rem'}}>
+                          <Badge endDate={c.contractTo}/>
+                          {panel.showRenew&&<button className="btn-green" onClick={e=>{e.stopPropagation();setSel(c);setModal('renew')}} style={{padding:'.18rem .6rem',borderRadius:'6px',fontSize:'.7rem'}}>Renew →</button>}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ))}
+            </div>
+          </>
+        ):(
+          <>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'1.1rem',flexWrap:'wrap',gap:'.75rem'}}>
+              <div style={{display:'flex',gap:'.4rem'}}>{[{k:'all',l:'All'},{k:'active',l:'Active'},{k:'expiring',l:'Expiring'},{k:'expired',l:'Expired'}].map(({k,l})=><button key={k} className={`chip ${filter===k?'on':''}`} onClick={()=>setFilter(k)}>{l}</button>)}</div>
+              <div style={{display:'flex',gap:'.65rem',alignItems:'center'}}>
+                <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search tenant, unit, building…" style={{...inp,width:'260px'}}/>
+                <select value={sort} onChange={e=>setSort(e.target.value)} style={{...inp,width:'auto',color:G.textMuted}}><option value="expiry">Sort: Expiry</option><option value="name">Sort: Name</option><option value="rent">Sort: Rent</option></select>
+              </div>
+            </div>
+            <div style={{background:G.navyLight,borderRadius:'14px',border:`1px solid ${G.border}`,overflow:'hidden'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',tableLayout:'fixed'}}>
+                <colgroup><col style={{width:'20%'}}/><col style={{width:'15%'}}/><col style={{width:'12%'}}/><col style={{width:'11%'}}/><col style={{width:'11%'}}/><col style={{width:'16%'}}/><col style={{width:'10%'}}/><col style={{width:'5%'}}/></colgroup>
+                <thead><tr style={{borderBottom:`1px solid ${G.border}`}}>{['Tenant','Property','Area','Annual Rent','Contract Value','Period','Status',''].map(h=><th key={h} style={{padding:'.8rem 1rem',textAlign:'left',color:G.textMuted,fontSize:'.67rem',fontWeight:'600',letterSpacing:'.09em',textTransform:'uppercase'}}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {filtered.length===0?<tr><td colSpan={8} style={{padding:'2.5rem',textAlign:'center',color:G.textMuted}}>No contracts found</td></tr>
+                    :filtered.map(c=>(
+                      <tr key={c.id} className="row-hover" onClick={()=>open(c)} style={{borderBottom:`1px solid ${G.border}`,transition:'background .15s'}}>
+                        <td style={{padding:'.85rem 1rem'}}><div style={{fontWeight:'500',fontSize:'.855rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.tenantName}</div><div style={{color:G.textMuted,fontSize:'.72rem'}}>{c.tenantPhone}</div></td>
+                        <td style={{padding:'.85rem 1rem'}}><div style={{fontSize:'.855rem'}}>Unit {c.propertyNo}</div><div style={{color:G.textMuted,fontSize:'.72rem',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.buildingName}</div></td>
+                        <td style={{padding:'.85rem 1rem',color:G.textMuted,fontSize:'.8rem'}}>{c.location||'—'}</td>
+                        <td style={{padding:'.85rem 1rem',color:G.gold,fontSize:'.855rem',fontWeight:'600'}}>{fmtAED(c.annualRent)}</td>
+                        <td style={{padding:'.85rem 1rem',color:G.textMuted,fontSize:'.8rem'}}>{fmtAED(c.contractValue)}</td>
+                        <td style={{padding:'.85rem 1rem'}}><div style={{color:G.textMuted,fontSize:'.73rem'}}>{fmtDate(c.contractFrom)}</div><div style={{color:G.textMuted,fontSize:'.73rem'}}>{fmtDate(c.contractTo)}</div></td>
+                        <td style={{padding:'.85rem 1rem'}}><Badge endDate={c.contractTo}/></td>
+                        <td style={{padding:'.85rem 1rem'}}>{['expiring','critical','expired'].includes(statusOf(c.contractTo))&&<button className="btn-green" onClick={e=>{e.stopPropagation();setSel(c);setModal('renew')}} style={{padding:'.25rem .65rem',borderRadius:'6px',fontSize:'.72rem'}}>Renew</button>}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+              <div style={{padding:'.65rem 1rem',borderTop:`1px solid ${G.border}`,color:G.textDim,fontSize:'.72rem'}}>Showing {filtered.length} of {contracts.length} contract{contracts.length!==1?'s':''}</div>
+            </div>
+          </>
+        )}
+      </main>
+
+      {modal==='add'    &&<ContractForm onSave={saveC} onClose={()=>setModal(null)} saving={saving}/>}
+      {modal==='edit'   &&sel&&<ContractForm contract={sel} onSave={saveC} onClose={()=>setModal(null)} saving={saving}/>}
+      {modal==='renew'  &&sel&&<RenewalModal contract={sel} onRenew={doRenew} onClose={()=>setModal(null)} saving={saving}/>}
+      {modal==='detail' &&sel&&<DetailPanel c={sel} onEdit={()=>setModal('edit')} onRenew={()=>setModal('renew')} onDelete={doDelete} onClose={()=>{setModal(null);setSel(null)}}/>}
+    </div>
+  )
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>)
+</script>
+</body>
+</html>
