@@ -20,6 +20,20 @@
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: #08182e; }
     ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 3px; }
+
+    @media print {
+      body * { visibility: hidden !important; }
+      #print-area, #print-area * { visibility: visible !important; }
+      #print-area { position: fixed; inset: 0; background: white; z-index: 9999; padding: 20mm; }
+      @page { size: A4; margin: 0; }
+    }
+    #print-area { display: none; }
+    .print-section { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #ddd; }
+    .print-row { display: flex; margin-bottom: 6px; font-size: 10pt; }
+    .print-label { color: #666; min-width: 160px; font-size: 9pt; }
+    .print-value { color: #111; font-weight: 500; }
+    .print-section-title { font-size: 8pt; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #1c2946; background: #e8edf5; padding: 4px 8px; margin-bottom: 8px; border-left: 3px solid #C9A84C; }
+
     @keyframes fadeSlide { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
     @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
     @keyframes slideIn   { from{opacity:0;transform:translateX(24px)} to{opacity:1;transform:translateX(0)} }
@@ -400,8 +414,11 @@ function DetailPanel({c,onEdit,onRenew,onDelete,onClose}) {
 
           <div style={{background:'rgba(96,165,250,.07)',border:'1px solid rgba(96,165,250,.2)',borderRadius:'10px',padding:'.875rem 1rem',marginBottom:'1.25rem'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'.6rem'}}>
-              <span style={{color:'#60a5fa',fontSize:'.78rem',fontWeight:'600'}}>📄 Export DLD PDF</span>
-              <button className="btn-blue" onClick={()=>exportJSON(c)} style={{padding:'.3rem .875rem',borderRadius:'6px'}}>Download JSON</button>
+              <span style={{color:'#60a5fa',fontSize:'.78rem',fontWeight:'600'}}>📄 Export Contract</span>
+              <div style={{display:'flex',gap:'.5rem'}}>
+                <button className="btn-blue" onClick={()=>exportJSON(c)} style={{padding:'.3rem .875rem',borderRadius:'6px'}}>JSON</button>
+                <button className="btn-gold" onClick={()=>printContract(c)} style={{padding:'.3rem .875rem',borderRadius:'6px',fontSize:'.8rem'}}>🖨 Print PDF</button>
+              </div>
             </div>
             <button onClick={()=>setShowPdf(!showPdf)} style={{background:'none',border:'none',color:G.textMuted,cursor:'pointer',fontSize:'.72rem',padding:0,textDecoration:'underline'}}>{showPdf?'Hide':'How to generate →'}</button>
             {showPdf&&<div style={{marginTop:'.75rem',fontSize:'.73rem',color:G.textMuted,lineHeight:1.8,background:'rgba(0,0,0,.2)',borderRadius:'8px',padding:'.75rem'}}>
@@ -606,5 +623,6 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>)
 </script>
+<div id="print-area"></div>
 </body>
 </html>
